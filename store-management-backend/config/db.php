@@ -1,13 +1,13 @@
 <?php
 $host = "localhost";
-$db   = "store_management";
-$user = "root";
-$pass = "";
+$db_name = "store-management";
+$username = "root";
+$password = "";
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
+    $pdo = new PDO("mysql:host=$host;dbname=$db_name;charset=utf8", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("DB Connection failed: " . $e->getMessage());
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
 }
 ?>
