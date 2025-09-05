@@ -7,12 +7,12 @@ class Sale {
     }
 
     # CREATE
-    public function create($userId, $customerId, $paymentMethod, $status, $items, $discount = 0, $tax = 0) {
+    public function create($userId, $customerId, $paymentMethod, $status, $items, $discount = 0, $tax = 0,$bankAccountId=1) {
         try {
             $this->pdo->beginTransaction();
 
             // ✅ Validate payment method
-            $validMethods = ['cash','card','bank_transfer','mobile'];
+            $validMethods = ['cash','bank_transfer'];
             if (!in_array($paymentMethod, $validMethods)) {
                 throw new Exception("Invalid payment method");
             }
@@ -117,8 +117,26 @@ class Sale {
                 VALUES (?, ?, ?, CURDATE(), ?)");
             $stmtPayment->execute([$customerId, $saleId, $finalAmount, $paymentMethod]);
 
+            // ✅ Auto-create bank transaction if payment is via bank_transfer
+            if ($paymentMethod === 'bank_transfer') {
+                // either from request or fallback to default account (id=1 here for example)
+                $bankAccountId = $items['bank_account_id'] ?? 1; 
+
+                $stmtBank = $this->pdo->prepare("INSERT INTO bank_transactions
+                    (bank_account_id, transaction_type, amount, description, transaction_date, related_sale_id, created_at)
+                    VALUES (?, 'INCOME', ?, ?, CURDATE(), ?, NOW())");
+
+                $stmtBank->execute([
+                    $bankAccountId,
+                    $finalAmount,
+                    "Sale #$saleId payment",
+                    $saleId
+                ]);
+            }
+
             $this->pdo->commit();
             return $saleId;
+
 
         } catch (Exception $e) {
             $this->pdo->rollBack();
